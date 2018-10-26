@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 import psycopg2
 import sys
@@ -7,6 +8,9 @@ from itertools import islice
 from enums import BOOLEAN, INTEGER, TEXT, DATA_LOADED_TABLE, DROP_DATE_COLUMN
 from utils import get_db_configs, get_file_type, get_drop_date, parse_col
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('data_loader')
 
 db_configs = get_db_configs()
 conn = psycopg2.connect(**db_configs)
@@ -32,7 +36,7 @@ def read_csv_spec(data_file, header=True):
             csv_reader = csv.reader(f, delimiter=',')
             return list(islice(csv_reader, 1 if header else 0, None))
     except IOError as e:
-        print 'ERROR: No csv spec file "{}" found for data file "{}", skipping...'.format(spec_file, data_file)
+        logger.error('No csv spec file "{}" found for data file "{}", skipping...'.format(spec_file, data_file))
 
     return None
 
@@ -67,28 +71,28 @@ def read_data(data_file, fields):
                 insert_line(table_name, drop_date, line.strip(), fields)
             mark_loaded(data_file)
     except IOError as e:
-        print 'ERROR: No data file "{}" found, skipping...'.format(data_file)
+        logger.error('No data file "{}" found, skipping...'.format(data_file))
         return None
     except Exception as e:
         # rollback transaction and skip
         conn.rollback()
-        print 'ERROR: {}'.format(e)
+        logger.error('Error for "{}": {}'.format(data_file, e))
         return None
 
 
     try:
         # commit single transaction of table creation and insertions
         conn.commit()
-        print 'SUCCESS loading data for "{}"'.format(data_file)
+        logger.info('SUCCESS loading data for "{}"'.format(data_file))
     except:
-        print 'ERROR: transaction commit failed for "{}", skipping...'.format(data_file)
+        logger.error('Transaction commit failed for "{}", skipping...'.format(data_file))
 
     return None
 
 
 def load_data(data_file):
     if is_loaded(data_file):
-        print 'WARNING: Already loaded data file "{}", skipping...'.format(data_file)
+        logger.warn('Already loaded data file "{}", skipping...'.format(data_file))
         return None
 
     fields = read_csv_spec(data_file)
