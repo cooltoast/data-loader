@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS data_loaded (data_file VARCHAR(255), loaded_at TIMESTAMP WITH TIME ZONE);
