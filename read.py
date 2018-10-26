@@ -1,26 +1,103 @@
 import csv
 import os
+import psycopg2
 import sys
 
 from itertools import islice
+from enums import BOOLEAN, INTEGER, TEXT, DATA_LOADED_TABLE, DROP_DATE_COLUMN
+from utils import get_db_configs, get_file_type, get_drop_date, parse_col
+
+
+db_configs = get_db_configs()
+conn = psycopg2.connect(**db_configs)
+cur = conn.cursor()
+
+
+def is_loaded(data_file):
+    cur.execute("SELECT * FROM {} where data_file = '{}'".format(DATA_LOADED_TABLE, data_file))
+    return bool(cur.fetchone())
+
+
+def mark_loaded(data_file):
+    cur.execute("INSERT INTO {} values ('{}', now())".format(DATA_LOADED_TABLE, data_file))
+    return None
+
 
 def read_csv_spec(data_file, header=True):
     # TODO add tests
-    spec_file = '{}.csv'.format(data_file.rsplit('_', 1)[0])
+    spec_file = '{}.csv'.format(get_file_type(data_file))
 
     try:
         with open(os.path.join('specs', spec_file), 'r') as f:
             csv_reader = csv.reader(f, delimiter=',')
-
-            for r in islice(csv_reader, 1 if header else 0, None):
-                yield r
+            return list(islice(csv_reader, 1 if header else 0, None))
     except IOError as e:
-        print 'No csv spec file {} found for data file {}'.format(spec_file, data_file)
+        print 'ERROR: No csv spec file "{}" found for data file "{}", skipping...'.format(spec_file, data_file)
+
+    return None
 
 
-def read_data(data_file):
-    for row in read_csv_spec(data_file):
-        print row
+def create_table(table_name, fields):
+    columns = ['{} DATE'.format(DROP_DATE_COLUMN)]
+    columns += [' '.join([field[0], field[2]]) for field in fields]
+
+    cur.execute('CREATE TABLE IF NOT EXISTS {} ({})'.format(table_name, ', '.join(columns)))
+    return None
+
+
+def insert_line(table_name, drop_date, line, fields):
+    i = 0
+    values = ["'{}'".format(drop_date)]
+    for field in fields:
+        col_width = int(field[1])
+        values.append(parse_col(line[i:i + col_width], field))
+        i += col_width
+
+    cur.execute('INSERT INTO {} values ({})'.format(table_name, ', '.join(values)))
+    return None
+
+
+def read_data(data_file, fields):
+    table_name = get_file_type(data_file)
+    drop_date = get_drop_date(data_file)
+    try:
+        with open(os.path.join('data', data_file), 'r') as f:
+            create_table(table_name, fields)
+            for line in f:
+                insert_line(table_name, drop_date, line.strip(), fields)
+            mark_loaded(data_file)
+    except IOError as e:
+        print 'ERROR: No data file "{}" found, skipping...'.format(data_file)
+        return None
+    except Exception as e:
+        # rollback transaction and skip
+        conn.rollback()
+        print 'ERROR: {}'.format(e)
+        return None
+
+
+    try:
+        # commit single transaction of table creation and insertions
+        conn.commit()
+        print 'SUCCESS loading data for "{}"'.format(data_file)
+    except:
+        print 'ERROR: transaction commit failed for "{}", skipping...'.format(data_file)
+
+    return None
+
+
+def load_data(data_file):
+    if is_loaded(data_file):
+        print 'WARNING: Already loaded data file "{}", skipping...'.format(data_file)
+        return None
+
+    fields = read_csv_spec(data_file)
+
+    if fields:
+        read_data(data_file, fields)
+
+    return None
+
 
 if __name__ == '__main__':
-    map(read_data, sys.argv[1:])
+    map(load_data, sys.argv[1:])
