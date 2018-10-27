@@ -43,7 +43,7 @@ def read_csv_spec(data_file, header=True):
 
 def create_table(table_name, fields):
     columns = ['{} DATE'.format(DROP_DATE_COLUMN)]
-    columns += [' '.join([field[0], field[2]]) for field in fields]
+    columns += [' '.join([field[0].replace(' ', '_'), field[2]]) for field in fields]
 
     cur.execute('CREATE TABLE IF NOT EXISTS {} ({})'.format(table_name, ', '.join(columns)))
     return None
@@ -104,4 +104,12 @@ def load_data(data_file):
 
 
 if __name__ == '__main__':
-    map(load_data, sys.argv[1:])
+    if len(sys.argv) < 2:
+        logger.error('Must provide at least one argument to load.py')
+    else:
+        try:
+            files = os.listdir(sys.argv[1])
+        except:
+            files = sys.argv[1:]
+
+        map(load_data, files)
