@@ -18,10 +18,10 @@ def get_drop_date(data_file):
     return data_file.rsplit('_', 1)[1].replace('.txt', '')
 
 
-def parse_col(col, field):
-    if field[2] == BOOLEAN:
+def parse_col(col, col_type):
+    if col_type == BOOLEAN:
         return 'true' if col.strip() == '1' else 'false'
-    elif field[2] == TEXT:
+    elif col_type == TEXT:
         return "'{}'".format(col.strip())
     else: # INTEGER
         return col.strip()

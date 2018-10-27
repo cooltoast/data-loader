@@ -62,7 +62,7 @@ def insert_line(table_name, drop_date, line, fields):
     values = ["'{}'".format(drop_date)]
     for field in fields:
         col_width = int(field[1])
-        values.append(parse_col(line[i:i + col_width], field))
+        values.append(parse_col(line[i:i + col_width], field[2]))
         i += col_width
 
     cur.execute('INSERT INTO {} values ({})'.format(table_name, ', '.join(values)))
