@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "Creating database..."
-createdb clover
+createdb <DATABASE>
 
 echo "Initializing tables..."
-psql -q -d clover -f init.sql
+psql -q -d <DATABASE> -f init.sql

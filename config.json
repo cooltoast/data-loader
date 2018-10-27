@@ -1,5 +1,5 @@
 {
   "host": "localhost",
-  "dbname": "clover",
+  "dbname": "<DATABASE>",
   "user": "<USER>"
 }
