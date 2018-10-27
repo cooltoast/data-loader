@@ -5,6 +5,8 @@ Usage:
  $ {} <file1> <file2> ...
 """
 
+from __future__ import print_function
+
 import csv
 import logging
 import os
@@ -113,11 +115,12 @@ def load_data(file_path):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print __doc__.format(sys.argv[0], sys.argv[0])
+        print(__doc__.format(sys.argv[0], sys.argv[0]))
     else:
         try:
             files = os.listdir(sys.argv[1])
         except:
             files = sys.argv[1:]
 
-        map(load_data, files)
+        for f in files:
+            load_data(f)
