@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+"""
+Usage:
+ $ {} <directory>
+ $ {} <file1> <file2> ...
+"""
+
 import csv
 import logging
 import os
@@ -28,7 +35,6 @@ def mark_loaded(data_file):
 
 
 def read_csv_spec(data_file, header=True):
-    # TODO add tests
     spec_file = '{}.csv'.format(get_file_type(data_file))
 
     try:
@@ -90,7 +96,9 @@ def read_data(data_file, fields):
     return None
 
 
-def load_data(data_file):
+def load_data(file_path):
+    data_file = os.path.basename(file_path)
+
     if is_loaded(data_file):
         logger.warn('Already loaded data file "{}", skipping...'.format(data_file))
         return None
@@ -105,7 +113,7 @@ def load_data(data_file):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        logger.error('Must provide at least one argument to load.py')
+        print __doc__.format(sys.argv[0], sys.argv[0])
     else:
         try:
             files = os.listdir(sys.argv[1])
