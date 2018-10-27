@@ -1,4 +1,5 @@
 "column name",width,datatype
-name,10,TEXT
-valid,1,BOOLEAN
-count,3,INTEGER
+"daily visitors",4,INTEGER
+website,21,TEXT
+"is dope",1,BOOLEAN
+"is free",1,BOOLEAN
